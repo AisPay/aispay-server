@@ -1,0 +1,9 @@
+{
+  "PORT": 4000,
+  "IS_TIME_MEMORY": false,
+  "TIME_MEMORY": 5,
+  "DB_NAME": "aispay-base",
+  "SALT_ROUND": 10,
+  "JWT_ACCESS_SECRET_KEY": "sdahflkjerngipdjqkflped;gjnmidofgnwelk;rmh;glaskmdf;lknwfgoqe;jg;lkdjflk;sj'lgkrjfl;alksghebrgidankdfas;jf;lk",
+  "JWT_REFRESH_SECRET_KEY": "asdvrgrfgdqherfhgiuhfdsgkjlewbfnebgqfuwfvbasjgfcayegfewhgvbaskdjvbakwjvgarkjasjdfvbawsemvwgnbuvsygvbaksjdgfsf"
+}
