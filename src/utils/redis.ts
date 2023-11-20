@@ -182,6 +182,15 @@ class RedisSchema<CurretlyConstructor extends Constructor> {
       }
     }
 
+    const checkArray = (body: any[], checked: any[]) => {
+      let stringBody = JSON.stringify(body);
+      for (let indexChecked = 0; indexChecked < checked.length; indexChecked++) {
+        const element = checked[indexChecked];
+        if (stringBody.includes(String(element))) return true;
+      }
+      return false;
+    };
+
     let values = await pipeline.exec();
 
     let addition = 0;
@@ -200,9 +209,18 @@ class RedisSchema<CurretlyConstructor extends Constructor> {
         // console.log(key, inputValue, localValue, inputForce);
 
         const isNull = typeof localValue === "undefined" && String(localValue) === "";
-        const isForceCheck = inputForce && this.convertString(localValue).includes(inputValue instanceof Date ? String(Number(inputValue)) : String(inputValue));
-        const isNoForceCheck = Array.isArray(inputValue) ? this.convertValue(key, localValue).includes(inputValue) : inputValue === this.convertValue(key, localValue);
         const isNumber = this.fields[key].type === "number" && ("min" in inputs[indexKey] || "max" in inputs[indexKey]);
+        const isArray = this.fields[key].type === "array";
+        const isDate = inputValue instanceof Date;
+        const isForceCheck =
+          (inputForce && isArray && checkArray(this.convertValue(key, localValue), inputValue)) ||
+          (isDate && this.convertValue(key, localValue).getTime() <= inputValue.getTime() + 86400000 && this.convertValue(key, localValue).getTime() >= inputValue.getTime() - 86400000) ||
+          String(localValue).includes(String(inputValue));
+        // this.convertString(localValue).includes(inputValue instanceof Date ? String(Number(inputValue)) : String(inputValue))
+        const isNoForceCheck =
+          (isArray && this.convertValue(key, localValue).includes(inputValue)) ||
+          (isDate && this.convertValue(key, localValue).getTime() === inputValue.getTime()) ||
+          this.convertValue(key, localValue) === inputValue;
         const isMinCheck = "min" in inputs[indexKey] && min < this.convertValue(key, localValue);
         const isMaxCheck = "max" in inputs[indexKey] && max > this.convertValue(key, localValue);
         const isIncludeKeys = localKeys.includes(key);
