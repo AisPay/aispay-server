@@ -2,7 +2,7 @@ import {compareSync} from "bcrypt";
 import {UserModel} from "../models/user.model";
 import ApiError from "../utils/apiError";
 import {RoleModel} from "../models/role.model";
-import UserAuthDto from "../dtos/user.dto";
+import UserAuthDto from "../dtos/User.dto";
 import tokenService from "./token.service";
 
 class UserService {
