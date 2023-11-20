@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import {env} from "../config/env";
 import {TokenModel} from "../models/token.model";
-import UserAuthDto from "../dtos/user.dto";
+import UserAuthDto from "../dtos/User.dto";
 
 type ObtainValue<T> = {
   [Prop in keyof T]: T[Prop];
