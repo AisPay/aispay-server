@@ -6,6 +6,10 @@ export const authorisationBody = z.object({
   password: z.string(),
 });
 
+export const authBearerHeader = {
+  Authorization: z.string().optional(),
+};
+
 export const authorisationResponse = {
   200: z.object({
     accessToken: z.string(),
