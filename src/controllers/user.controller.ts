@@ -4,7 +4,6 @@ import {authorisationBody} from "../schemas/user.schema";
 import userService from "../services/user.service";
 import {WebSocket} from "ws";
 import ApiError from "../utils/apiError";
-import {logger} from "../utils/logger";
 
 class UserController {
   async authorisation(request: FastifyRequest, reply: FastifyReply) {
@@ -28,7 +27,10 @@ class UserController {
   }
 
   async refresh(request: FastifyRequest, reply: FastifyReply) {
-    const accessToken = request.headers["authorization"]?.split(" ")[1];
+    const accessTokenArray = request.headers["authorization"]?.split(" ");
+    let accessToken;
+    if (accessTokenArray?.length === 2) accessToken = accessTokenArray[1];
+
     const refreshToken = request.cookies["refreshToken"] as string | undefined;
 
     const {body} = await userService.refresh(accessToken, refreshToken);

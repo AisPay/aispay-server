@@ -24,9 +24,10 @@ export async function buildServer() {
   // error handle
   app.setErrorHandler((error, requset, reply) => {
     try {
-      return reply.status(error.statusCode ?? 500).send({statusCode: error.statusCode ?? 500, message: JSON.parse(error.message)});
+      return reply.status(400).send({statusCode: error.statusCode ?? 500, message: JSON.parse(error.message)});
     } catch (e) {
-      return reply.status(error.statusCode ?? 500).send({statusCode: error.statusCode ?? 500, message: error.message});
+      if (error instanceof ApiError) return reply.status(error.statusCode).send({statusCode: error.statusCode ?? 500, message: error.message});
+      return reply.status(500).send({statusCode: error.statusCode ?? 500, message: error.message});
     }
   });
 
@@ -49,6 +50,18 @@ export async function buildServer() {
         title: "Documentation",
         description: "Documentation Rest-Api this server",
         version: "0.1",
+      },
+      security: [
+        {
+          authorization: ["authorization"],
+        },
+      ],
+      securityDefinitions: {
+        authorization: {
+          type: "apiKey",
+          name: "authorization",
+          in: "headers",
+        },
       },
       host: `${env.HOST}:${env.PORT}`,
       schemes: ["http"],
