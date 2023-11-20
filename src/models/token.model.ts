@@ -1,7 +1,4 @@
-import config from "config";
-import RedisSchema, {Constructor, SchemaConstructor} from "../packages/redis.package";
-
-const dbName = config.get<string>("DB_NAME");
+import RedisSchema, {Constructor, SchemaConstructor} from "../utils/redis";
 
 class TokenSchema<CurretlyConstructor extends Constructor> extends RedisSchema<CurretlyConstructor> {
   private static instance: TokenSchema<any>;
@@ -14,9 +11,12 @@ class TokenSchema<CurretlyConstructor extends Constructor> extends RedisSchema<C
 }
 
 export const TokenModel = new TokenSchema({
-  key: `${dbName}:tokens`,
+  key: `tokens`,
   fields: {
-    userId: {type: "number", reqiured: true},
-    refreshToken: {type: "string", reqiured: true},
+    userId: {type: "number", required: true},
+    accessToken: {type: "string", required: true},
+    isActive: {type: "boolean", default: true},
+    refreshToken: {type: "string", required: true},
+    sockets: {type: "array", mono: "number", default: []},
   },
 });

@@ -1,15 +1,15 @@
 export default class ApiError extends Error {
-  status: number;
+  statusCode: number;
   errors: string[];
 
   constructor(status: number, message: string, errors = [] as string[]) {
     super(message);
-    this.status = status;
+    this.statusCode = status;
     this.errors = errors;
   }
 
   static UnathorizedError() {
-    return new ApiError(401, "Пользователь не авторизован");
+    return new ApiError(403, "Пользователь не авторизован");
   }
 
   static BadRequest(message: string, errors = [] as string[]) {

@@ -1,36 +1,24 @@
 import jwt from "jsonwebtoken";
-import config from "config";
+import {env} from "../config/env";
 import {TokenModel} from "../models/token.model";
+import UserAuthDto from "../dtos/user.dto";
 
-const accessSecretKey = config.get<string>("JWT_ACCESS_SECRET_KEY");
-const refreshSecretKey = config.get<string>("JWT_REFRESH_SECRET_KEY");
+type ObtainValue<T> = {
+  [Prop in keyof T]: T[Prop];
+};
 
 class TokenService {
-  generateTokens(payload: any) {
-    const accessToken = jwt.sign(payload, accessSecretKey, {expiresIn: "5m"});
-    const refreshToken = jwt.sign(payload, refreshSecretKey, {expiresIn: "30d"});
+  generateTokens(payload: string) {
+    const accessToken = jwt.sign(JSON.parse(payload), env.ACCESS_SECRET_KEY, {expiresIn: 300000});
+    const refreshToken = jwt.sign(JSON.parse(payload), env.REFRESH_SECRET_KEY, {expiresIn: 2592000000});
+
     return {accessToken, refreshToken};
-  }
-  async saveToken(userId: number, refreshToken: string) {
-    const token = await TokenModel.add({userId, refreshToken});
-    return token;
-  }
-
-  async removeToken(refreshToken: string) {
-    const tokenData = await TokenModel.findOne({search: [{key: "refreshToken", value: refreshToken}]});
-    if (tokenData) await TokenModel.remove(tokenData.id);
-    return tokenData;
-  }
-
-  async findToken(refreshToken: string) {
-    const tokenData = await TokenModel.findOne({search: [{key: "refreshToken", value: refreshToken}]});
-    return tokenData;
   }
 
   validateAccessToken(token: any) {
     try {
-      const userData = jwt.verify(token, accessSecretKey) as string;
-      return JSON.parse(userData);
+      const userData = jwt.verify(token, env.ACCESS_SECRET_KEY) as Object;
+      return userData as ObtainValue<UserAuthDto>;
     } catch (error: any) {
       return null;
     }
@@ -38,19 +26,58 @@ class TokenService {
 
   validateRefreshToken(token: any) {
     try {
-      const userData = jwt.verify(token, refreshSecretKey) as string;
-      return JSON.parse(userData);
+      const userData = jwt.verify(token, env.REFRESH_SECRET_KEY) as Object;
+      return userData as ObtainValue<UserAuthDto>;
     } catch (error: any) {
       return null;
     }
   }
 
-  async clearRefreshTokenDbTime() {
-    let tokens = await TokenModel.finds();
-    for (let indexToken = 0; indexToken < tokens.length; indexToken++) {
-      const token = tokens[indexToken];
-      if (this.validateRefreshToken(token.refreshToken) === null) await TokenModel.remove(token.id);
-    }
+  async saveToken(userId: number, tokens: {accessToken: string; refreshToken: string}, id?: number) {
+    if (!id) return await TokenModel.add({userId, ...tokens});
+
+    await TokenModel.update({userId, ...tokens}, id);
+
+    return await TokenModel.findOne({id});
+  }
+
+  async removeToken(id: number) {
+    let token = await TokenModel.findOne({id});
+    if (!token) return null;
+
+    await TokenModel.remove(id);
+
+    return token;
+  }
+
+  async addSocketToken(socketId: number, id: number) {
+    let token = await TokenModel.findOne({id});
+    if (!token) return null;
+
+    await TokenModel.update({sockets: [...token.sockets, socketId]}, id);
+
+    return (await TokenModel.findOne({id})) ?? null;
+  }
+
+  async removeSocketToken(socketId: number, id: number) {
+    let token = await TokenModel.findOne({id});
+    if (!token) return null;
+
+    await TokenModel.update({sockets: token.sockets.filter((elId) => elId !== socketId)}, id);
+
+    return (await TokenModel.findOne({id})) ?? null;
+  }
+
+  async findTokens(search: {accessToken?: string; refreshToken?: string; socketId?: number}) {
+    let searchLocal = [];
+    if (search.accessToken) searchLocal.push({key: "accessToken", value: search.accessToken});
+    if (search.refreshToken) searchLocal.push({key: "refreshToken", value: search.refreshToken});
+    if (search.socketId) searchLocal.push({key: "sockets", value: [search.socketId], force: true});
+
+    let token = await TokenModel.findOne({search: <any>searchLocal});
+    if (!token) return null;
+
+    return token;
   }
 }
 

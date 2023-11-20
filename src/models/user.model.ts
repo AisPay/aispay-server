@@ -1,7 +1,4 @@
-import config from "config";
-import RedisSchema, {Constructor, SchemaConstructor} from "../packages/redis.package";
-
-const dbName = config.get<string>("DB_NAME");
+import RedisSchema, {Constructor, SchemaConstructor} from "../utils/redis";
 
 class UserSchema<CurretlyConstructor extends Constructor> extends RedisSchema<CurretlyConstructor> {
   private static instance: UserSchema<any>;
@@ -14,9 +11,10 @@ class UserSchema<CurretlyConstructor extends Constructor> extends RedisSchema<Cu
 }
 
 export const UserModel = new UserSchema({
-  key: `${dbName}:users`,
+  key: `users`,
   fields: {
     passwordHash: {type: "string"},
     login: {type: "string", unique: true},
+    roleId: {type: "number", required: true},
   },
 });

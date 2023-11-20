@@ -1,6 +1,49 @@
 import {createClient} from "redis";
-import type {ArrayNumberType, ArrayStringType, BooleanType, EnumCustom, NumberType, StringType, toTypeSchema} from "../types/redis";
-import config from "config";
+import {env} from "../config/env";
+
+type OneType = "string" | "number" | "boolean";
+type ManyType = "array";
+
+type EnumCustom = {
+  [key: string]: string | number;
+};
+
+type StringType = {
+  type: "string";
+  required?: boolean;
+  default?: string;
+  enum?: EnumCustom;
+  unique?: boolean;
+};
+
+type NumberType = {
+  type: "number";
+  required?: boolean;
+  default?: number;
+};
+
+type BooleanType = {
+  type: "boolean";
+  required?: boolean;
+  default?: boolean;
+};
+
+type ArrayStringType = {
+  type: "array";
+  mono: "string";
+  required?: boolean;
+  default?: string[];
+  enum?: EnumCustom;
+};
+
+type ArrayNumberType = {
+  type: "array";
+  mono: "number";
+  required?: boolean;
+  default?: number[];
+};
+
+type toTypeSchema<Type extends OneType | ManyType> = Type extends "string" ? string : Type extends "number" ? number : Type extends "boolean" ? boolean : never;
 
 export type Constructor = {
   [key: string]: StringType | NumberType | BooleanType | ArrayStringType | ArrayNumberType;
@@ -27,6 +70,7 @@ type DefKeys = {
   readonly updateAt: number;
 };
 
+type Sort<CurretlyConstructor extends Constructor, Key extends keyof CurretlyConstructor> = {key: Key | "createAt" | "updateAt"; type: "asc" | "desc"};
 type MinMax<CurretlyConstructor extends Constructor, Key extends keyof CurretlyConstructor> = toValueOf<CurretlyConstructor, Key> extends number
   ? {min?: number; max?: number}
   : ToValue<CurretlyConstructor, Key>;
@@ -37,8 +81,8 @@ type SchemaKey<CurretlyConstructor extends Constructor> = {
   [Key in keyof CurretlyConstructor]: toValueOf<CurretlyConstructor, Key>;
 };
 
-type CreateSchema<CurretlyConstructor extends Constructor> = Pick<SchemaKey<CurretlyConstructor>, RequiredKeys<CurretlyConstructor>> &
-  Partial<Omit<SchemaKey<CurretlyConstructor>, RequiredKeys<CurretlyConstructor>>>;
+type CreateSchema<CurretlyConstructor extends Constructor> = Omit<Pick<SchemaKey<CurretlyConstructor>, RequiredKeys<CurretlyConstructor>>, DefaultKeys<CurretlyConstructor>> &
+  Partial<SchemaKey<CurretlyConstructor>>;
 
 export type FullSchema<CurretlyConstructor extends Constructor> = Pick<SchemaKey<CurretlyConstructor>, RequiredKeys<CurretlyConstructor> | DefaultKeys<CurretlyConstructor>> &
   Partial<Omit<SchemaKey<CurretlyConstructor>, RequiredKeys<CurretlyConstructor> | DefaultKeys<CurretlyConstructor>>> &
@@ -63,10 +107,10 @@ class RedisSchema<CurretlyConstructor extends Constructor> {
   fields: CurretlyConstructor;
 
   constructor(schema: SchemaConstructor<CurretlyConstructor>) {
-    this.path = schema.key;
-    this.pathIds = `${schema.key}:ids`;
+    this.path = `${env.DB_NAME}:${schema.key}`;
+    this.pathIds = `${this.path}:ids`;
     this.fields = schema.fields;
-    this.pathMemory = `${schema.key}:memory`;
+    this.pathMemory = `${this.path}:memory`;
 
     this.add = this.add.bind(this);
     this.convertString = this.convertString.bind(this);
@@ -156,14 +200,14 @@ class RedisSchema<CurretlyConstructor extends Constructor> {
         // console.log(key, inputValue, localValue, inputForce);
 
         const isNull = typeof localValue === "undefined" && String(localValue) === "";
-        const isForceCheck = inputForce && this.convertString(localValue).includes(String(inputValue));
-        const isNoForceCheck = inputValue === this.convertValue(key, localValue);
+        const isForceCheck = inputForce && this.convertString(localValue).includes(inputValue instanceof Date ? String(Number(inputValue)) : String(inputValue));
+        const isNoForceCheck = Array.isArray(inputValue) ? this.convertValue(key, localValue).includes(inputValue) : inputValue === this.convertValue(key, localValue);
         const isNumber = this.fields[key].type === "number" && ("min" in inputs[indexKey] || "max" in inputs[indexKey]);
         const isMinCheck = "min" in inputs[indexKey] && min < this.convertValue(key, localValue);
         const isMaxCheck = "max" in inputs[indexKey] && max > this.convertValue(key, localValue);
         const isIncludeKeys = localKeys.includes(key);
         // console.log(inputs[indexKey], inputValue, localValue, isNull, isForceCheck, isNoForceCheck, isNumber, isMinCheck, isMaxCheck);
-        console.log(localIds[indexId], key, localValue, inputValue);
+        // console.log(localIds[indexId], key, localValue, inputValue);
         // console.log(`isNull: ${String(isNull)}, isForceCheck: ${String(isForceCheck)}, isNoForceCheck: ${String(isNoForceCheck)}, isIncludeKeys: ${String(isIncludeKeys)}`);
 
         if (one) {
@@ -210,8 +254,8 @@ class RedisSchema<CurretlyConstructor extends Constructor> {
   }
 
   private async saveMemory(code: string, value: any) {
-    let isTimeMemory = config.get<boolean>("IS_TIME_MEMORY");
-    let timeMemory = config.get<number>("TIME_MEMORY");
+    let isTimeMemory = env.IS_TIME_MEMORY;
+    let timeMemory = env.TIME_MEMORY;
     if (isTimeMemory) await client.setEx(`${this.pathMemory}:${code}`, timeMemory, JSON.stringify(value));
   }
 
@@ -404,16 +448,18 @@ class RedisSchema<CurretlyConstructor extends Constructor> {
     await pipeline.exec();
   }
 
-  async findOne(input: {id: number; save?: boolean}): Promise<FullSchema<CurretlyConstructor> | undefined>;
+  async findOne<Key extends keyof CurretlyConstructor>(input: {id: number; save?: boolean; sort?: Sort<CurretlyConstructor, Key>}): Promise<FullSchema<CurretlyConstructor> | undefined>;
   async findOne<Key extends keyof CurretlyConstructor>(input: {
     search: Array<{key: Key; force?: boolean} & CountOrValue<CurretlyConstructor, Key>>;
     save?: boolean;
+    sort?: Sort<CurretlyConstructor, Key>;
   }): Promise<FullSchema<CurretlyConstructor> | undefined>;
   async findOne<Key extends keyof CurretlyConstructor>(input: {
     id?: number;
     search?: Array<{key: Key; force?: boolean} & CountOrValue<CurretlyConstructor, Key>>;
     force?: boolean;
     save?: boolean;
+    sort?: Sort<CurretlyConstructor, Key>;
   }): Promise<FullSchema<CurretlyConstructor> | undefined> {
     if (typeof input.save === "undefined") input.save = true;
     let code = this.generateMemoryKey(input);
@@ -424,6 +470,24 @@ class RedisSchema<CurretlyConstructor extends Constructor> {
 
     let memoryIds = await client.sMembers(this.pathIds);
     let ids = memoryIds.map((el) => Number(el)).sort((aId, bId) => aId - bId);
+    if (input.sort) {
+      let localPipeline = client.multi();
+      for (let indexIds = 0; indexIds < ids.length; indexIds++) {
+        const id = ids[indexIds];
+        if (typeof input.sort.key === "string") localPipeline.hGet(this.pathSchema(id), input.sort.key);
+      }
+      let result = await localPipeline.exec();
+      let bodyKey: any = {};
+      for (let indexIds = 0; indexIds < ids.length; indexIds++) {
+        const id = ids[indexIds];
+        bodyKey[result[indexIds] as string] = id;
+      }
+      if (input.sort.key === "createAt" || input.sort.key === "updateAt") (<any>result) = result.map((value) => new Date(value as string));
+      else if (this.fields[input.sort.key].type === "number") (<any>result) = result.map((value) => Number(value));
+      result = result.sort();
+      if (input.sort.type === "desc") result = result.reverse();
+      ids = result.map((value) => bodyKey[value as string]);
+    }
 
     if (input.search) {
       ids = await this.searchCondition(input.search, ids, true);
@@ -433,6 +497,7 @@ class RedisSchema<CurretlyConstructor extends Constructor> {
 
     let id = input.id!;
     const pipeline = client.multi();
+    if (!(await client.sIsMember(this.pathIds, String(id)))) return undefined;
 
     let keys = Object.keys(this.fields).concat(["id", "createAt", "updateAt"]);
     for (let indexKey = 0; indexKey < keys.length; indexKey++) {
@@ -454,32 +519,55 @@ class RedisSchema<CurretlyConstructor extends Constructor> {
   }
 
   async finds(): Promise<FullSchema<CurretlyConstructor>[]>;
-  async finds(input: {start: number}): Promise<FullSchema<CurretlyConstructor>[]>;
-  async finds(input: {end: number}): Promise<FullSchema<CurretlyConstructor>[]>;
-  async finds(input: {start: number; end: number}): Promise<FullSchema<CurretlyConstructor>[]>;
-  async finds(input: {start: number; count: true}): Promise<number>;
-  async finds<Key extends keyof CurretlyConstructor>(input: {start: number; search: Array<{key: Key; force?: boolean} & CountOrValue<CurretlyConstructor, Key>>; count: true}): Promise<number>;
-  async finds(input: {end: number; count: true}): Promise<number>;
-  async finds<Key extends keyof CurretlyConstructor>(input: {end: number; search: Array<{key: Key; force?: boolean} & CountOrValue<CurretlyConstructor, Key>>; count: true}): Promise<number>;
-  async finds(input: {start: number; end: number; count: true}): Promise<number>;
-  async finds<Key extends keyof CurretlyConstructor>(input: {start: number; end: number; search: Array<{key: Key; value: toValueOf<CurretlyConstructor, Key>}>; count: true}): Promise<number>;
-  async finds<Key extends keyof CurretlyConstructor>(input: {search: Array<{key: Key; force?: boolean} & CountOrValue<CurretlyConstructor, Key>>}): Promise<FullSchema<CurretlyConstructor>[]>;
+  async finds<Key extends keyof CurretlyConstructor>(input: {start: number; sort?: Sort<CurretlyConstructor, Key>}): Promise<FullSchema<CurretlyConstructor>[]>;
+  async finds<Key extends keyof CurretlyConstructor>(input: {end: number; sort?: Sort<CurretlyConstructor, Key>}): Promise<FullSchema<CurretlyConstructor>[]>;
+  async finds<Key extends keyof CurretlyConstructor>(input: {start: number; end: number; sort?: Sort<CurretlyConstructor, Key>}): Promise<FullSchema<CurretlyConstructor>[]>;
+  async finds<Key extends keyof CurretlyConstructor>(input: {start: number; count: true; sort?: Sort<CurretlyConstructor, Key>}): Promise<number>;
   async finds<Key extends keyof CurretlyConstructor>(input: {
     start: number;
+    sort?: Sort<CurretlyConstructor, Key>;
+    search: Array<{key: Key; force?: boolean} & CountOrValue<CurretlyConstructor, Key>>;
+    count: true;
+  }): Promise<number>;
+  async finds<Key extends keyof CurretlyConstructor>(input: {end: number; count: true; sort?: Sort<CurretlyConstructor, Key>}): Promise<number>;
+  async finds<Key extends keyof CurretlyConstructor>(input: {
+    end: number;
+    sort?: Sort<CurretlyConstructor, Key>;
+    search: Array<{key: Key; force?: boolean} & CountOrValue<CurretlyConstructor, Key>>;
+    count: true;
+  }): Promise<number>;
+  async finds<Key extends keyof CurretlyConstructor>(input: {start: number; end: number; count: true; sort?: Sort<CurretlyConstructor, Key>}): Promise<number>;
+  async finds<Key extends keyof CurretlyConstructor>(input: {
+    start: number;
+    sort?: Sort<CurretlyConstructor, Key>;
+    end: number;
+    search: Array<{key: Key; value: toValueOf<CurretlyConstructor, Key>}>;
+    count: true;
+  }): Promise<number>;
+  async finds<Key extends keyof CurretlyConstructor>(input: {
+    sort?: Sort<CurretlyConstructor, Key>;
+    search: Array<{key: Key; force?: boolean} & CountOrValue<CurretlyConstructor, Key>>;
+  }): Promise<FullSchema<CurretlyConstructor>[]>;
+  async finds<Key extends keyof CurretlyConstructor>(input: {
+    start: number;
+    sort?: Sort<CurretlyConstructor, Key>;
     search: Array<{key: Key; force?: boolean} & CountOrValue<CurretlyConstructor, Key>>;
   }): Promise<FullSchema<CurretlyConstructor>[]>;
   async finds<Key extends keyof CurretlyConstructor>(input: {
     end: number;
+    sort?: Sort<CurretlyConstructor, Key>;
     search: Array<{key: Key; force?: boolean} & CountOrValue<CurretlyConstructor, Key>>;
   }): Promise<FullSchema<CurretlyConstructor>[]>;
   async finds<Key extends keyof CurretlyConstructor>(input: {
     start: number;
+    sort?: Sort<CurretlyConstructor, Key>;
     end: number;
     search: Array<{key: Key; force?: boolean} & CountOrValue<CurretlyConstructor, Key>>;
   }): Promise<FullSchema<CurretlyConstructor>[]>;
   async finds<Key extends keyof CurretlyConstructor>(input?: {
     start?: number;
     end?: number;
+    sort?: Sort<CurretlyConstructor, Key>;
     count?: true;
     search?: Array<{key: Key; force?: boolean} & CountOrValue<CurretlyConstructor, Key>>;
     force?: boolean;
@@ -490,6 +578,24 @@ class RedisSchema<CurretlyConstructor extends Constructor> {
 
     let memoryIds = await client.sMembers(this.pathIds);
     let ids = memoryIds.map((el) => Number(el)).sort((aId, bId) => aId - bId);
+    if (input && input.sort) {
+      let localPipeline = client.multi();
+      for (let indexIds = 0; indexIds < ids.length; indexIds++) {
+        const id = ids[indexIds];
+        if (typeof input.sort.key === "string") localPipeline.hGet(this.pathSchema(id), input.sort.key);
+      }
+      let result = await localPipeline.exec();
+      let bodyKey: any = {};
+      for (let indexIds = 0; indexIds < ids.length; indexIds++) {
+        const id = ids[indexIds];
+        bodyKey[result[indexIds] as string] = id;
+      }
+      if (input.sort.key === "createAt" || input.sort.key === "updateAt") (<any>result) = result.map((value) => new Date(value as string));
+      else if (this.fields[input.sort.key].type === "number") (<any>result) = result.map((value) => Number(value));
+      result = result.sort();
+      if (input.sort.type === "desc") result = result.reverse();
+      ids = result.map((value) => bodyKey[value as string]);
+    }
 
     let array = [] as any[];
 
@@ -514,7 +620,7 @@ class RedisSchema<CurretlyConstructor extends Constructor> {
   }
 }
 
-export const client = createClient();
+export const client = createClient({url: env.DATABASE_CONNECTION});
 client.connect();
 
 export default RedisSchema;

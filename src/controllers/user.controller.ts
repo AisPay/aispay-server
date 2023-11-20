@@ -1,34 +1,52 @@
 import {FastifyReply, FastifyRequest} from "fastify";
+import {z} from "zod";
+import {authorisationBody} from "../schemas/user.schema";
 import userService from "../services/user.service";
-import Validator from "../exceptions/validator.exception";
-
-const authValidator = new Validator({
-  login: {type: "string", required: true},
-  password: {type: "string", required: true},
-});
+import {WebSocket} from "ws";
+import ApiError from "../utils/apiError";
+import {logger} from "../utils/logger";
 
 class UserController {
-  async login(req: FastifyRequest, reply: FastifyReply) {
-    const {login, password} = authValidator.valid(req.body);
+  async authorisation(request: FastifyRequest, reply: FastifyReply) {
+    const {login, password} = request.body as z.infer<typeof authorisationBody>;
 
-    const userData = await userService.loginUser(login, password);
-    reply.cookie("refreshToken", userData.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true});
+    const {body} = await userService.authorisation(login, password);
 
-    return reply.send(JSON.stringify(userData));
+    reply.cookie("refreshToken", body.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true});
+
+    return reply.status(200).send(body);
   }
 
-  async logout(req: FastifyRequest, reply: FastifyReply) {
-    let refreshToken = req.cookies.refreshToken;
-    if (refreshToken) userService.logout(refreshToken);
+  async logout(request: FastifyRequest, reply: FastifyReply) {
+    let refreshToken = request.cookies["refreshToken"];
+    if (!refreshToken) return reply.status(200).send();
 
-    return reply.status(200).send();
+    await userService.logout(refreshToken);
+    reply.clearCookie("refreshToken");
+
+    return reply.status(200).send({});
   }
 
-  async refresh(req: FastifyRequest, reply: FastifyReply) {
-    let refreshToken = req.cookies.refreshToken;
-    let data = await userService.refresh(refreshToken);
+  async refresh(request: FastifyRequest, reply: FastifyReply) {
+    const accessToken = request.headers["authorization"]?.split(" ")[1];
+    const refreshToken = request.cookies["refreshToken"] as string | undefined;
 
-    return reply.status(200).send(data);
+    const {body} = await userService.refresh(accessToken, refreshToken);
+
+    reply.cookie("refreshToken", body.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, httpOnly: true});
+
+    reply.status(200).send(body);
+  }
+
+  async authorisationSocket(socket: WebSocket, message: {accessToken: string}) {
+    let id = (<any>socket)["id"];
+    let result = await userService.authorisationSocket(message.accessToken, id);
+    if (!result) throw ApiError.UnathorizedError();
+  }
+
+  async logoutSocket(socket: WebSocket) {
+    let id = (<any>socket)["id"];
+    await userService.logoutSocket(id);
   }
 }
 
