@@ -79,6 +79,15 @@ class TokenService {
 
     return token;
   }
+
+  async autoClearTokens() {
+    let tokens = await TokenModel.finds();
+    for (let indexToke = 0; indexToke < tokens.length; indexToke++) {
+      const token = tokens[indexToke];
+      let refreshValid = this.validateRefreshToken(token.refreshToken);
+      if (refreshValid === null) await TokenModel.remove(token.id);
+    }
+  }
 }
 
 export default new TokenService();
