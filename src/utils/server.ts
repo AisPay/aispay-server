@@ -82,7 +82,7 @@ export async function buildServer() {
   // registrations plugins
   app.register(fastifyCors, {
     origin: "*",
-    allowedHeaders: ["Origin", "X-Requested-With", "Accept", "Content-Type", "Authorization"],
+    allowedHeaders: ["Origin", "X-Requested-With", "Accept", "Content-Type", "Authorization", "Access-Control-Allow-Origin"],
     methods: ["GET", "POST", "PUT", "DELETE"],
   });
   app.register(fastifyCookie);
