@@ -63,7 +63,7 @@ class UserService {
     let tokenDb = await tokenService.saveToken(user.id, tokensNew, tokens.id);
     if (!tokenDb) throw new ApiError(500, "Не удалось сохранить токен");
 
-    return {body: {...tokens, user: userDto}, tokenDb};
+    return {body: {...tokensNew, user: userDto}, tokenDb};
   }
 
   async authorisationSocket(accessToken: string, id?: number) {

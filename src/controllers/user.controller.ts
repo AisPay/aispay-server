@@ -27,9 +27,9 @@ class UserController {
   }
 
   async refresh(request: FastifyRequest, reply: FastifyReply) {
-    const accessTokenArray = request.headers["authorization"]?.split(" ");
+    const accessTokenString = request.headers["authorization"];
     let accessToken;
-    if (accessTokenArray?.length === 2) accessToken = accessTokenArray[1];
+    if (accessTokenString?.length === 2) accessToken = accessTokenString.split(" ")[1];
 
     const refreshToken = request.cookies["refreshToken"] as string | undefined;
 
