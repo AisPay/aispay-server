@@ -82,8 +82,11 @@ export async function buildServer() {
   // registrations plugins
   app.register(fastifyCors, {
     origin: "*",
-    allowedHeaders: ["Origin", "X-Requested-With", "Accept", "Content-Type", "Authorization", "Access-Control-Allow-Origin"],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+    exposedHeaders: "Authorization",
+    allowedHeaders: "Origin, X-Requested-With, Accept, Content-Type, Authorization, Access-Control-Allow-Origin",
+    methods: "GET, POST, PUT, DELETE",
   });
   app.register(fastifyCookie);
   app.register(websocketPlugin, {
