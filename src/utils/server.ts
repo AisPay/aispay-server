@@ -80,7 +80,11 @@ export async function buildServer() {
   });
 
   // registrations plugins
-  app.register(fastifyCors);
+  app.register(fastifyCors, {
+    origin: "*",
+    allowedHeaders: ["Origin", "X-Requested-With", "Accept", "Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+  });
   app.register(fastifyCookie);
   app.register(websocketPlugin, {
     options: {maxPayload: 1048576},
