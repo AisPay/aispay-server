@@ -81,7 +81,7 @@ export async function buildServer() {
 
   // registrations plugins
   app.register(fastifyCors, {
-    origin: "*",
+    origin: env.ORIGIN,
     preflightContinue: false,
     credentials: true,
     optionsSuccessStatus: 204,
