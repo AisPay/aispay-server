@@ -86,8 +86,6 @@ export async function buildServer() {
       cb(new Error("Not allowed"), false);
     },
     credentials: true,
-    optionsSuccessStatus: 200,
-    exposedHeaders: "Authorization",
     allowedHeaders: "Origin, X-Requested-With, Accept, Content-Type, Authorization, Access-Control-Allow-Origin, Access-Control-Allow-Credentials, *",
     methods: "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATH, DELETE",
   });
