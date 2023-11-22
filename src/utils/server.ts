@@ -72,13 +72,17 @@ export async function buildServer() {
   // register cors
   app.register(fastifyCors, {
     origin: (origin, cb) => {
-      if (!origin) return cb(null, false);
+      if (!origin) {
+        logger.info("OK", "No host");
+        return cb(null, false);
+      }
       const hostname = new URL(origin).hostname;
       console.log(hostname, env.ORIGIN.split(", "));
       if (env.ORIGIN.split(", ").includes(hostname)) {
-        cb(null, true);
-        return;
+        logger.info("OK", hostname);
+        return cb(null, true);
       }
+      logger.info("OK", hostname);
       cb(new Error("Not allowed"), false);
     },
     preflightContinue: false,
