@@ -72,7 +72,7 @@ class TokenService {
     let searchLocal = [];
     if (search.accessToken) searchLocal.push({key: "accessToken", value: search.accessToken});
     if (search.refreshToken) searchLocal.push({key: "refreshToken", value: search.refreshToken});
-    if (search.socketId) searchLocal.push({key: "sockets", value: [search.socketId], force: true});
+    if (search.socketId) searchLocal.push({key: "sockets", value: [search.socketId]});
 
     let token = await TokenModel.findOne({search: <any>searchLocal});
     if (!token) return null;
