@@ -85,7 +85,6 @@ export async function buildServer() {
       logger.info("OK", hostname);
       cb(new Error("Not allowed"), false);
     },
-    preflightContinue: false,
     credentials: true,
     optionsSuccessStatus: 200,
     exposedHeaders: "Authorization",
