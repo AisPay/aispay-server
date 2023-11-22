@@ -15,7 +15,7 @@ class UserController {
 
     return reply
       .status(200)
-      .setCookie("refreshToken", body.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: "none", path: "/", secure: true, httpOnly: true})
+      .setCookie("refreshToken", body.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: "none", path: "/", secure: false, httpOnly: true})
       .send(body);
   }
 
@@ -43,7 +43,7 @@ class UserController {
 
     reply
       .status(200)
-      .setCookie("refreshToken", body.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: "none", path: "/", secure: true, httpOnly: true})
+      .setCookie("refreshToken", body.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: "none", path: "/", secure: false, httpOnly: true})
       .send(body);
   }
 
