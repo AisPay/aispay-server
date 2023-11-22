@@ -86,7 +86,7 @@ export async function buildServer() {
     optionsSuccessStatus: 204,
     exposedHeaders: "Authorization",
     allowedHeaders: "Origin, X-Requested-With, Accept, Content-Type, Authorization, Access-Control-Allow-Origin",
-    methods: "GET, POST, PUT, DELETE",
+    methods: "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATH, DELETE",
   });
 
   // register swagger ui
