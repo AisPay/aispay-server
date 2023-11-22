@@ -33,7 +33,7 @@ class UserController {
     if (accessTokenString?.length === 2) accessToken = accessTokenString.split(" ")[1];
 
     const refreshToken = request.cookies["refreshToken"] as string | undefined;
-    if (process.argv.includes("--dev")) logger.info("Access:", accessToken, "Refresh:", refreshToken);
+    if (process.argv.includes("--dev")) logger.info("Tokens:", {accessToken, refreshToken});
 
     const {body} = await userService.refresh(accessToken, refreshToken);
 
