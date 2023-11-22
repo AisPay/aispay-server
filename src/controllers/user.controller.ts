@@ -4,6 +4,7 @@ import {authorisationBody} from "../schemas/user.schema";
 import userService from "../services/user.service";
 import {WebSocket} from "ws";
 import ApiError from "../utils/apiError";
+import {logger} from "../utils/logger";
 
 class UserController {
   async authorisation(request: FastifyRequest, reply: FastifyReply) {
@@ -32,6 +33,7 @@ class UserController {
     if (accessTokenString?.length === 2) accessToken = accessTokenString.split(" ")[1];
 
     const refreshToken = request.cookies["refreshToken"] as string | undefined;
+    if (process.argv.includes("--dev")) logger.info("Access:", accessToken, "Refresh:", refreshToken);
 
     const {body} = await userService.refresh(accessToken, refreshToken);
 
