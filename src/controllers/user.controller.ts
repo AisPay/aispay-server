@@ -11,9 +11,12 @@ class UserController {
 
     const {body} = await userService.authorisation(login, password);
 
-    reply.setCookie("refreshToken", body.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: "none", path: "/", secure: true, httpOnly: true});
+    // reply.setCookie("refreshToken", body.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: "none", path: "/", secure: true, httpOnly: true});
 
-    return reply.status(200).send(body);
+    return reply
+      .status(200)
+      .setCookie("refreshToken", body.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: "none", path: "/", secure: true, httpOnly: true})
+      .send(body);
   }
 
   async logout(request: FastifyRequest, reply: FastifyReply) {
@@ -36,9 +39,12 @@ class UserController {
 
     const {body} = await userService.refresh(accessToken, refreshToken);
 
-    reply.setCookie("refreshToken", body.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: "none", path: "/", secure: true, httpOnly: true});
+    // reply.setCookie("refreshToken", body.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: "none", path: "/", secure: true, httpOnly: true});
 
-    reply.status(200).send(body);
+    reply
+      .status(200)
+      .setCookie("refreshToken", body.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, sameSite: "none", path: "/", secure: true, httpOnly: true})
+      .send(body);
   }
 
   async authorisationSocket(socket: WebSocket, message: {accessToken: string}) {
