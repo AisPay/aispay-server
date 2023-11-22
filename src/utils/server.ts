@@ -81,7 +81,14 @@ export async function buildServer() {
 
   // registrations plugins
   app.register(fastifyCors, {
-    origin: env.ORIGIN,
+    origin: (origin, cb) => {
+      const hostname = new URL(String(origin)).hostname;
+      if (env.ORIGIN.includes(hostname)) {
+        cb(null, true);
+        return;
+      }
+      cb(new Error("Not allowed"), false);
+    },
     preflightContinue: false,
     credentials: true,
     optionsSuccessStatus: 204,

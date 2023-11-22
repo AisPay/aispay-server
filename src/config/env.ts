@@ -21,6 +21,6 @@ export const env = zennv({
     INIT_PARTNER_PASSWORD: z.string().default("ghrthgfffxsdfw"),
     INIT_OPERATOR_LOGIN: z.string().default("operator"),
     INIT_OPERATOR_PASSWORD: z.string().default("ghrthgfffxsdfw"),
-    ORIGIN: z.string().default("*"),
+    ORIGIN: z.string().array().default([]),
   }),
 });
