@@ -87,7 +87,7 @@ export async function buildServer() {
     },
     preflightContinue: false,
     credentials: true,
-    optionsSuccessStatus: 204,
+    optionsSuccessStatus: 200,
     exposedHeaders: "Authorization",
     allowedHeaders: "Origin, X-Requested-With, Accept, Content-Type, Authorization, Access-Control-Allow-Origin",
     methods: "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATH, DELETE",
