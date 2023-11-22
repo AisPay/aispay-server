@@ -9,7 +9,7 @@ import fastifySwaggerUi from "@fastify/swagger-ui";
 import fastifyCors from "@fastify/cors";
 import fastifyCookie from "@fastify/cookie";
 import ApiError from "./apiError";
-import {ZodError} from "zod";
+import {Url} from "node:url";
 import websocketPlugin from "@fastify/websocket";
 
 export async function buildServer() {
@@ -83,6 +83,7 @@ export async function buildServer() {
   app.register(fastifyCors, {
     origin: (origin, cb) => {
       const hostname = new URL(String(origin)).hostname;
+      console.log(hostname, env.ORIGIN.split(", "));
       if (env.ORIGIN.split(", ").includes(hostname)) {
         cb(null, true);
         return;
