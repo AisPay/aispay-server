@@ -9,7 +9,6 @@ import fastifySwaggerUi from "@fastify/swagger-ui";
 import fastifyCors from "@fastify/cors";
 import fastifyCookie from "@fastify/cookie";
 import ApiError from "./apiError";
-import {Url} from "node:url";
 import websocketPlugin from "@fastify/websocket";
 
 export async function buildServer() {
@@ -70,19 +69,12 @@ export async function buildServer() {
     },
   });
 
-  // register swagger ui
-  app.register(fastifySwaggerUi, {
-    routePrefix: "/documentations",
-    uiConfig: {
-      docExpansion: "full",
-      deepLinking: false,
-    },
-  });
-
-  // registrations plugins
+  // register cors
   app.register(fastifyCors, {
     origin: (origin, cb) => {
-      const hostname = new URL(String(origin)).hostname;
+      console.log(origin);
+      if (!origin) return cb(null, false);
+      const hostname = new URL(origin).hostname;
       console.log(hostname, env.ORIGIN.split(", "));
       if (env.ORIGIN.split(", ").includes(hostname)) {
         cb(null, true);
@@ -97,6 +89,17 @@ export async function buildServer() {
     allowedHeaders: "Origin, X-Requested-With, Accept, Content-Type, Authorization, Access-Control-Allow-Origin",
     methods: "GET, POST, PUT, DELETE",
   });
+
+  // register swagger ui
+  app.register(fastifySwaggerUi, {
+    routePrefix: "/documentations",
+    uiConfig: {
+      docExpansion: "full",
+      deepLinking: false,
+    },
+  });
+
+  // registrations plugins
   app.register(fastifyCookie);
   app.register(websocketPlugin, {
     options: {maxPayload: 1048576},
