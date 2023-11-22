@@ -83,7 +83,7 @@ export async function buildServer() {
   app.register(fastifyCors, {
     origin: (origin, cb) => {
       const hostname = new URL(String(origin)).hostname;
-      if (env.ORIGIN.includes(hostname)) {
+      if (env.ORIGIN.split(", ").includes(hostname)) {
         cb(null, true);
         return;
       }
