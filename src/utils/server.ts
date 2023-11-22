@@ -72,7 +72,6 @@ export async function buildServer() {
   // register cors
   app.register(fastifyCors, {
     origin: (origin, cb) => {
-      console.log(origin);
       if (!origin) return cb(null, false);
       const hostname = new URL(origin).hostname;
       console.log(hostname, env.ORIGIN.split(", "));
