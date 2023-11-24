@@ -11,7 +11,7 @@ class UserController {
 
     const {body} = await userService.authorisation(login, password);
 
-    reply.setCookie("refreshToken", body.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, path: "/", httpOnly: true});
+    reply.setCookie("refreshToken", body.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, path: "/", httpOnly: false});
 
     return reply.status(200).send(body);
   }
@@ -36,7 +36,7 @@ class UserController {
 
     const {body} = await userService.refresh(accessToken, refreshToken);
 
-    reply.setCookie("refreshToken", body.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, path: "/", httpOnly: true});
+    reply.setCookie("refreshToken", body.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, path: "/", httpOnly: false});
 
     reply.status(200).send(body);
   }
