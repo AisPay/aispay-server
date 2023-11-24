@@ -10,9 +10,14 @@ import fastifyCors from "@fastify/cors";
 import fastifyCookie from "@fastify/cookie";
 import ApiError from "./apiError";
 import websocketPlugin from "@fastify/websocket";
+import {existsSync, readFileSync} from "node:fs";
 
 export async function buildServer() {
   let app = fastify({
+    https: {
+      cert: existsSync("../cert.pem") ? readFileSync("../cert.pem") : undefined,
+      key: existsSync("../key.pem") ? readFileSync("../key.pem") : undefined,
+    },
     logger: process.argv.includes("--dev") ? logger : true,
   });
 
