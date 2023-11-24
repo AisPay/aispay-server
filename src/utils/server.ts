@@ -13,12 +13,15 @@ import websocketPlugin from "@fastify/websocket";
 import {existsSync, readFileSync} from "node:fs";
 
 export async function buildServer() {
+  let isCert = existsSync("../cert.pem") && existsSync("../key.pem");
   let app = fastify({
-    https: {
-      cert: existsSync("../cert.pem") ? readFileSync("../cert.pem") : undefined,
-      key: existsSync("../key.pem") ? readFileSync("../key.pem") : undefined,
-    },
     logger: process.argv.includes("--dev") ? logger : true,
+    ...(isCert && {
+      https: {
+        cert: readFileSync("../cert.pem"),
+        key: readFileSync("../key.pem"),
+      },
+    }),
   });
 
   // register zod module
