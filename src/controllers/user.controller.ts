@@ -4,7 +4,6 @@ import {authorisationBody} from "../schemas/user.schema";
 import userService from "../services/user.service";
 import {WebSocket} from "ws";
 import ApiError from "../utils/apiError";
-import {env} from "../config/env";
 
 class UserController {
   async authorisation(request: FastifyRequest, reply: FastifyReply) {
@@ -12,10 +11,7 @@ class UserController {
 
     const {body} = await userService.authorisation(login, password);
 
-    for (let indexDomain = 0; indexDomain < env.ORIGIN.length; indexDomain++) {
-      const domain = env.ORIGIN[indexDomain];
-      reply.setCookie("refreshToken", body.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, domain, path: "/api/v1/users", httpOnly: true});
-    }
+    reply.setCookie("refreshToken", body.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, path: "/api/v1/users", httpOnly: true});
 
     return reply.status(200).send(body);
   }
@@ -40,10 +36,7 @@ class UserController {
 
     const {body} = await userService.refresh(accessToken, refreshToken);
 
-    for (let indexDomain = 0; indexDomain < env.ORIGIN.length; indexDomain++) {
-      const domain = env.ORIGIN[indexDomain];
-      reply.setCookie("refreshToken", body.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, domain, path: "/api/v1/users", httpOnly: true});
-    }
+    reply.setCookie("refreshToken", body.refreshToken, {maxAge: 30 * 24 * 60 * 60 * 1000, path: "/api/v1/users", httpOnly: true});
 
     reply.status(200).send(body);
   }
